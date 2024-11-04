@@ -17,6 +17,7 @@ def get_authorization_code(machine_code):
 
 @app.route("/", methods=["GET"])
 def index():
+    remote_ip = request.remote_addr
     machine_code = request.args.get("machine_code")
     activation_code = request.args.get("activation_code")
 
@@ -33,7 +34,7 @@ def index():
             "serial_number": activation_code,
             "registration_code": authorization_code,
         },
-        headers={"Content-Type": "application/json"},
+        headers={"Content-Type": "application/json", "X-Real-IP": remote_ip},
     )
 
     if response.status_code != 200:
