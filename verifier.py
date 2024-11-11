@@ -46,6 +46,13 @@ def index():
 
     if not data.get("verified"):
         error_message = data.get("error", "激活失败")
+        translation = {
+            "Already registered": "激活码已使用！",
+            "Invalid Registeration code!": "激活码不存在！",
+            "Failed to connect backend DB": "服务端错误！请联系管理员",
+            "Times-key used too times!": "多次激活码使用已达上限！",
+        }
+        error_message = translation.get(error_message, error_message)
         return render_template_string(f"<h1>激活错误：{error_message}</h1>"), 400
 
     return render_template_string(
