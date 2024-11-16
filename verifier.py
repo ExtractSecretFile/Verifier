@@ -1,10 +1,12 @@
-from flask import Flask, request, render_template_string
+from flask import Flask, request, render_template_string, jsonify
+from flask_cors import CORS
 import subprocess
 import requests
 
 app = Flask(__name__)
+CORS(app)
 
-BASE_URL = "http://127.0.0.1:8000/"
+BASE_URL = "http://127.0.0.1:8000"
 
 
 def get_authorization_code(machine_code):
@@ -15,19 +17,23 @@ def get_authorization_code(machine_code):
     return stdout.decode().strip()
 
 
-@app.route("/", methods=["GET"])
+@app.route("/verify", methods=["GET"])
 def index():
     remote_ip = request.remote_addr
     machine_code = request.args.get("machine_code")
     activation_code = request.args.get("activation_code")
 
+
     if not machine_code or not activation_code:
-        return render_template_string(
-            "<h1>Error: Machine code and activation code are required</h1>"
-        ), 400
+        return jsonify(
+            {
+                "status": 400,
+                "verified": False,
+                "description": "Error: Machine code and activation code are required",
+            }
+        )
 
     authorization_code = get_authorization_code(machine_code)
-
     response = requests.post(
         f"{BASE_URL}/register",
         json={
@@ -38,12 +44,16 @@ def index():
     )
 
     if response.status_code != 200:
-        return render_template_string(
-            "<h1>Error: Network error, please try again later</h1>"
-        ), 500
+        return jsonify(
+            {
+                "status": 500,
+                "verified": False,
+                "description": "Error: Network error, please try again later",
+            }
+        )
 
     data = response.json()
-
+    print(data)
     if not data.get("verified"):
         error_message = data.get("error", "激活失败")
         translation = {
@@ -53,11 +63,9 @@ def index():
             "Times-key used too times!": "多次激活码使用已达上限！",
         }
         error_message = translation.get(error_message, error_message)
-        return render_template_string(f"<h1>激活错误：{error_message}</h1>"), 400
+        return jsonify({"status": 400, "verified": False, "description": error_message})
 
-    return render_template_string(
-        f"<h1>激活成功</h1><p>离线激活码：{authorization_code}</p>"
-    )
+    return jsonify({"verified": True, "authorization_code": authorization_code})
 
 
 if __name__ == "__main__":
