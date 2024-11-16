@@ -1,10 +1,10 @@
 from flask import Flask, request, render_template_string, jsonify
-from flask_cors import CORS
+# from flask_cors import CORS
 import subprocess
 import requests
 
-app = Flask(__name__)
-CORS(app)
+app = Flask(__name__, static_url_path="")
+# CORS(app)
 
 BASE_URL = "http://127.0.0.1:8000"
 
@@ -17,12 +17,16 @@ def get_authorization_code(machine_code):
     return stdout.decode().strip()
 
 
-@app.route("/verify", methods=["GET"])
+@app.route("/", methods=["GET"])
 def index():
+    return app.send_static_file("index.html")
+
+
+@app.route("/verify", methods=["GET"])
+def verify():
     remote_ip = request.remote_addr
     machine_code = request.args.get("machine_code")
     activation_code = request.args.get("activation_code")
-
 
     if not machine_code or not activation_code:
         return jsonify(
