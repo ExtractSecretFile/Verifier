@@ -4,7 +4,7 @@ import requests
 
 app = Flask(__name__)
 
-BASE_URL = "http://127.0.0.1:8000/"
+BASE_URL = "http://127.0.0.1:8000"
 
 
 def get_authorization_code(machine_code):
