@@ -1,7 +1,9 @@
-from flask import Flask, request, render_template_string, jsonify
-# from flask_cors import CORS
+import json
 import subprocess
 import requests
+
+from flask import Flask, request, jsonify
+
 
 app = Flask(__name__, static_url_path="")
 # CORS(app)
@@ -56,20 +58,39 @@ def verify():
             }
         )
 
-    data = response.json()
-    print(data)
-    if not data.get("verified"):
-        error_message = data.get("error", "激活失败")
-        translation = {
-            "Already registered": "激活码已使用！",
-            "Invalid Registeration code!": "激活码不存在！",
-            "Failed to connect backend DB": "服务端错误！请联系管理员",
-            "Times-key used too times!": "多次激活码使用已达上限！",
-        }
-        error_message = translation.get(error_message, error_message)
-        return jsonify({"status": 400, "verified": False, "description": error_message})
+    data: dict = response.json()
+    if data.get("verified"):
+        return jsonify({"verified": True, "authorization_code": authorization_code})
 
-    return jsonify({"verified": True, "authorization_code": authorization_code})
+    error_message = data.get("error", "激活失败")
+
+    REGISTERED = "Already registered"
+
+    if error_message == REGISTERED:
+        response = requests.post(
+            f"{BASE_URL}/reverse",
+            headers={"Content-Type": "application/json"},
+            data=json.dumps({"registeration_code": authorization_code}),
+            timeout=None,
+        )
+
+        resp = response.json()
+
+        if response.status_code == 200:
+            resp = response.json()
+            if "error" not in resp or not resp["error"]:
+                return jsonify(
+                    {"verified": True, "authorization_code": authorization_code}
+                )
+
+    translation = {
+        REGISTERED: "激活码已使用！",
+        "Invalid Registeration code!": "激活码不存在！",
+        "Failed to connect backend DB": "服务端错误！请联系管理员",
+        "Times-key used too times!": "多次激活码使用已达上限！",
+    }
+    error_message = translation.get(error_message, error_message)
+    return jsonify({"status": 400, "verified": False, "description": error_message})
 
 
 if __name__ == "__main__":
