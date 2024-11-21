@@ -24,6 +24,11 @@ def index():
     return app.send_static_file("index.html")
 
 
+@app.errorhandler(404)
+def login(_error):
+    return app.send_static_file("404.html"), 404
+
+
 @app.route("/verify", methods=["GET"])
 def verify():
     remote_ip = request.remote_addr
