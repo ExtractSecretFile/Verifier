@@ -78,7 +78,7 @@ def verify():
 
         if response.status_code == 200:
             resp = response.json()
-            if "error" not in resp or not resp["error"]:
+            if resp["serial_number"] is not None:
                 return jsonify(
                     {"verified": True, "authorization_code": authorization_code}
                 )
